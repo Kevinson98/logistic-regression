@@ -1,0 +1,80 @@
+---
+title: "Classification of iris using logistic regression"
+
+author: "Kevins_Kacha"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Relevant packages
+
+Calling for the relevant libraries that will aid in our task.
+
+Rpart helps in checking for the relationship that exist between the classes.
+
+Rpart.plot aids in drawing the decision tree.
+
+We wish to classify the species iris data based on the flower attributes, including the sepal.length, sepal.width, petal.length and petal.width using the decision tree or logistic regression. 
+
+```{r setup1, echo=TRUE}
+library(rpart)
+library(rpart.plot)
+data("iris")
+library(caret)
+library(e1071)
+```
+
+## Data manipulation
+
+Based on our dataset iris the data is classified based in the species ie setosa , virginica and versicolor as below. 
+```{r setup18, echo=TRUE}
+head(iris)
+```
+## Randomisation of the data
+
+Our aim is to mix the data up before subsettung the train data and the testing data.
+
+We assign randomly generated numbers which are uniformly distributed and arrange them in asceding order to mix up the dataset.
+
+According to the glimple below, the data is now mixed up.
+```{r setup2, echo=TRUE}
+set.seed(500)
+g<-runif(nrow(iris))
+iris_ran<-iris[order(g),]
+head(iris_ran)
+```
+## Fitting the model 
+We proceed and select first 100 rows as training data and fit a model on it using rpart using classification method.
+```{r setup3, echo=TRUE}
+model1<-rpart(Species~., data =iris_ran[1:100,], method = "class")
+model1
+```
+# The decision tree 
+The decision tree gives a clear picture of the classification based on the features evident in the model
+
+```{r setup4, echo=TRUE}
+
+rpart.plot(model1, type = 4, fallen.leaves = T, extra = 104 )
+```
+According to our plot , it is observed that the setosa species had petal.length less than 2.5, versicolor and virginica had petal.length >= 2.5. They only differ in petal width as versicolor is <1.8 and virginica is >= 1.8.
+
+The sepal.length and sepal.width does not influence the classification of species.
+## Testing the model
+
+We tested the model on the remaining 50 rows to evaluate the goodness of fit.
+```{r setup5, echo=TRUE}
+model.predict<-predict(model1,iris_ran[101:150,], type = "class")
+model.predict
+```
+## Prediction accuracy
+
+The function confusionmatrix in caTools helps to check the level of prediction accuracy.
+
+Based on our model, the prediction accuracy is 98%. It predicted all setosa species correctly, out of 15 versicolor it predicted 14 of them correctly and lastly it predicted all the virginica species correctly.
+```{r setup6, echo=TRUE}
+confusionMatrix(iris_ran[101:150,5], reference = model.predict)
+```
+
