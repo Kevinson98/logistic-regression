@@ -1,0 +1,192 @@
+---
+title: "Machine Learning with R"
+author: "Kevins_Kacha"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup1, echo=TRUE}
+loan_data <- readRDS("D:/kacha R workspace/loan_data.rds")
+head(loan_data, 10)
+library(caret)
+library(data.tree)
+library(caTools)
+library(rpart)
+library(rpart.plot)
+library(tidyverse)
+names(loan_data)
+```
+
+Summary of default rates accordindg to loan purpose.
+```{r setup2, echo=TRUE}
+default_rates <- loan_data |> 
+  group_by(loan_purpose) |>      
+  summarise(n_customers = n(),
+            customers_default = sum(loan_default == "yes"),
+            default_percent = 100 * mean(loan_default == "yes"))
+default_rates
+```
+
+A visual presentation of the default rate considering loan purpose.
+```{r setup3, echo=TRUE}
+ggplot(data = default_rates, mapping = aes(x = loan_purpose, y = default_percent)) +
+  geom_bar(stat = "identity", fill = "#006EA1", color = "white") +
+           labs(title = "Loan Default Rate by Purpose of Loan",
+                x = "Loan Purpose",
+                y = "Default Percentage") +
+             theme_light()
+```
+
+Summarizing default rate considering application type(Individual or group)
+
+```{r setup4, echo=TRUE}
+application_typ<-loan_data |> 
+  group_by(application_type) |> 
+  summarise(n_customers=n(),
+            customers_default = sum(loan_default == "yes"),
+            default_percent = 100 * mean(loan_default == "yes"))
+
+application_typ
+```
+
+Visual presentation of the above.
+```{r setup5, echo=TRUE}
+ggplot(data = application_typ, mapping = aes(x = application_type, y = default_percent)) +
+  geom_bar(stat = "identity", fill = "#006EA1", color = "white") +
+  labs(title = "Loan Default Rate by application type",
+       x = "application type",
+       y = "Default Percentage") +
+  theme_light()
+```
+
+Is there correlation between the loan given and the interest rate?
+
+```{r setup7, echo=TRUE}
+cor(loan_data$loan_amount, loan_data$interest_rate)
+```
+
+
+```{r setup8, echo=TRUE}
+# homeownership
+home<-loan_data |> 
+  group_by(homeownership) |> 
+  summarise(n_customers=n(),
+            customers_default = sum(loan_default == "yes"),
+            default_percent = 100 * mean(loan_default == "yes"))
+home
+```
+
+
+```{r setup9, echo=TRUE}
+ggplot(data = home, mapping = aes(x = homeownership, y = default_percent)) +
+  geom_bar(stat = "identity", fill = "#006EA1", color = "white") +
+  labs(title = "Loan Default Rate by homeownership",
+       x = "homeownership",
+       y = "Default Percentage") +
+  theme_light()
+```
+
+
+```{r setup10, echo=TRUE}
+# based on the term of payment
+term_payment<-loan_data |> 
+  group_by(term) |> 
+  summarise(n_customers=n(),
+            customers_default = sum(loan_default == "yes"),
+            default_percent = 100 * mean(loan_default == "yes"))
+term_payment
+```
+
+
+```{r setup11, echo=TRUE}
+ggplot(data = term_payment, mapping = aes(x = term, y = default_percent)) +
+  geom_bar(stat = "identity", fill = "#006EA1", color = "white") +
+  labs(title = "Loan Default Rate by term_payment",
+       x = "term_payment",
+       y = "Default Percentage") +
+  theme_light()
+```
+
+Based on years credit history
+
+```{r setup12, echo=TRUE}
+YearsCreditWorth<-loan_data |> 
+  group_by(years_credit_history) |> 
+  summarise(n_customers=n(),
+            customers_default = sum(loan_default == "yes"),
+            default_percent = 100 * mean(loan_default == "yes"))|> 
+  arrange(desc(n_customers)) |> 
+  head(19) |> 
+  arrange(desc(default_percent)) |> 
+  head(5)
+YearsCreditWorth
+```
+
+
+```{r setup13, echo=TRUE}
+Bankruptcy<-loan_data |> 
+  group_by(history_bankruptcy) |> 
+  summarise(n_customers=n(),
+            customers_default = sum(loan_default == "yes"),
+            default_percent = 100 * mean(loan_default == "yes"))
+Bankruptcy
+```
+
+
+```{r setup14, echo=TRUE}
+ggplot(data =Bankruptcy , mapping = aes(x = history_bankruptcy, y = default_percent)) +
+  geom_bar(stat = "identity", fill = "#006EA1", color = "white") +
+  labs(title = "Loan Default Rate by Bankruptcy",
+       x = "Bankruptcy",
+       y = "Default Percentage") +
+  theme_light()
+```
+
+splitting the data  into training and testing data
+
+```{r setup16, echo=TRUE}
+dim(loan_data)
+
+
+sample<- sample.split(loan_data$loan_default, SplitRatio = 0.8)
+train<-subset(loan_data, sample == TRUE)
+dim(train)
+test<-subset(loan_data, sample==FALSE)
+dim(test)
+```
+
+tree classifier
+```{r setup17, echo=TRUE}
+tree<-rpart(loan_default~., data = train)
+tree
+```
+
+prediction using the test
+
+```{r setup18, echo=TRUE}
+tree.Default.predicted<-predict(tree, test, type = "class")
+```
+
+confusionMatrix for evaluating the model
+
+```{r setup19, echo=TRUE}
+confusionMatrix(tree.Default.predicted, test$loan_default)
+```
+rpartplot
+
+```{r setup25, echo=TRUE}
+prp(tree)
+```
+
+
+```{r setup20, echo=TRUE}
+by3<-head(loan_data, 4)
+by3.pred<-predict(tree, by3, type= "class")
+by3.pred
+```
+
+
